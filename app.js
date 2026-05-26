@@ -163,13 +163,24 @@ function createCell(text, className = "") {
   return cell;
 }
 
+function createHospitalCell(hospital) {
+  const cell = document.createElement("td");
+  const link = document.createElement("a");
+  link.href = hospital.hospitalUrl;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = hospital.name;
+  cell.append(link);
+  return cell;
+}
+
 function renderResults() {
   const fragment = document.createDocumentFragment();
   state.filtered.forEach((hospital) => {
     const row = document.createElement("tr");
     row.append(
       createCell(hospital.prefecture),
-      createCell(hospital.name),
+      createHospitalCell(hospital),
       createCell(hospital.type),
       createCell(hospital.region),
     );
@@ -223,6 +234,7 @@ function downloadCsv() {
     "病院区分",
     "マッチング参加",
     "受付番号",
+    "病院URL",
     "出典URL",
   ];
   const rows = state.filtered.map((hospital) => [
@@ -233,6 +245,7 @@ function downloadCsv() {
     hospital.type,
     hospital.matchingParticipation ? "参加" : "不参加",
     hospital.receptionNumber,
+    hospital.hospitalUrl,
     hospital.sourceUrl,
   ]);
   const csv = [header, ...rows]

@@ -275,6 +275,16 @@ tbody tr:hover td {
   color: var(--accent);
 }
 
+td a {
+  color: var(--accent);
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+
+td a:hover {
+  color: var(--accent-dark);
+}
+
 @media (max-width: 920px) {
   .summary {
     grid-template-columns: 1fr;

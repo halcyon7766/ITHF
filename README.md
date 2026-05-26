@@ -1,6 +1,6 @@
 # 初期研修病院検索
 
-JRMPの参加病院一覧ページに掲載されている2025年度PDFをもとに、初期研修病院を条件でフィルタできる静的サイトです。
+JRMPの参加病院一覧ページに掲載されている2025年度PDFをもとに、初期研修病院を条件でフィルタできる静的サイトです。PDF内のリンク注釈から病院ごとのURLも抽出しています。
 
 ## データ
 
@@ -25,6 +25,7 @@ python -m http.server 8000
 `sources/`内のPDFから抽出したテキストファイルを更新した後、次のコマンドで `data/hospitals.json` を再生成できます。
 
 ```powershell
+python -m pip install -r requirements.txt
 python scripts\build_data.py
 ```
 

@@ -2,6 +2,8 @@ import json
 import re
 from pathlib import Path
 
+from pypdf import PdfReader
+
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "data" / "hospitals.json"
@@ -109,12 +111,14 @@ REGIONS = {
 SOURCES = [
     {
         "path": ROOT / "sources" / "list2025-daigaku.txt",
+        "pdf_path": ROOT / "sources" / "list2025-daigaku.pdf",
         "hospital_type": "大学病院",
         "source_url": "https://www.jrmp2.jp/hospital-list/list2025-daigaku.pdf",
         "expected_count": 125,
     },
     {
         "path": ROOT / "sources" / "list2025-ippan.txt",
+        "pdf_path": ROOT / "sources" / "list2025-ippan.pdf",
         "hospital_type": "臨床研修病院",
         "source_url": "https://www.jrmp2.jp/hospital-list/list2025-ippan.pdf",
         "expected_count": 901,
@@ -122,10 +126,40 @@ SOURCES = [
 ]
 
 
+def extract_links(pdf_path):
+    reader = PdfReader(str(pdf_path))
+    links = []
+
+    for page_index, page in enumerate(reader.pages, start=1):
+        for annot_ref in page.get("/Annots") or []:
+            annot = annot_ref.get_object()
+            if annot.get("/Subtype") != "/Link":
+                continue
+
+            action = annot.get("/A")
+            uri = action.get("/URI") if action else None
+            if not uri:
+                continue
+
+            rect = [float(value) for value in annot.get("/Rect")]
+            links.append(
+                {
+                    "page": page_index,
+                    "top": max(rect[1], rect[3]),
+                    "url": str(uri),
+                }
+            )
+
+    # PDF coordinates use the bottom-left as origin, so larger y values appear first.
+    links.sort(key=lambda item: (item["page"], -item["top"]))
+    return [item["url"] for item in links]
+
+
 def parse_source(source):
     pref_pattern = "|".join(re.escape(pref) for pref in PREFECTURES)
     row_pattern = re.compile(rf"^({pref_pattern})\s+(.+?)\s+([○◯-])\s+(\d+)\s*$")
     rows = []
+    links = extract_links(source["pdf_path"])
 
     for line in source["path"].read_text(encoding="utf-8").splitlines():
         line = line.strip()
@@ -144,6 +178,7 @@ def parse_source(source):
                 "name": " ".join(name.split()),
                 "matchingParticipation": participation in {"○", "◯"},
                 "receptionNumber": int(reception_number),
+                "hospitalUrl": links[len(rows)],
                 "sourceUrl": source["source_url"],
             }
         )
@@ -151,6 +186,10 @@ def parse_source(source):
     if len(rows) != source["expected_count"]:
         raise ValueError(
             f"{source['path'].name}: expected {source['expected_count']} rows, got {len(rows)}"
+        )
+    if len(links) != source["expected_count"]:
+        raise ValueError(
+            f"{source['pdf_path'].name}: expected {source['expected_count']} links, got {len(links)}"
         )
 
     return rows
