@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>初期研修病院検索</title>
+    <meta
+      name="description"
+      content="JRMPの2025年度参加病院一覧をもとに、初期研修病院を条件で検索できます。"
+    />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div>
+        <h1>初期研修病院検索</h1>
+        <p>
+          JRMPの公開PDFに掲載された2025年度マッチング参加病院を、病院区分・地域・都道府県・キーワードで絞り込めます。
+        </p>
+      </div>
+    </header>
+
+    <main>
+      <section class="summary" aria-label="データ概要">
+        <div>
+          <span class="summary-label">掲載年度</span>
+          <strong id="datasetYear">-</strong>
+        </div>
+        <div>
+          <span class="summary-label">総件数</span>
+          <strong id="totalCount">-</strong>
+        </div>
+        <div>
+          <span class="summary-label">表示件数</span>
+          <strong id="visibleCount">-</strong>
+        </div>
+      </section>
+
+      <section class="filters" aria-label="検索条件">
+        <label class="field field-wide">
+          <span>キーワード</span>
+          <input
+            id="keyword"
+            type="search"
+            placeholder="病院名・受付番号で検索"
+            autocomplete="off"
+          />
+        </label>
+
+        <label class="field">
+          <span>病院区分</span>
+          <select id="typeFilter">
+            <option value="">すべて</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>地方</span>
+          <select id="regionFilter">
+            <option value="">すべて</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>都道府県</span>
+          <select id="prefectureFilter">
+            <option value="">すべて</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>参加状況</span>
+          <select id="participationFilter">
+            <option value="">すべて</option>
+            <option value="true">マッチング参加</option>
+            <option value="false">不参加</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>並び順</span>
+          <select id="sortOrder">
+            <option value="prefecture">都道府県順</option>
+            <option value="name">病院名順</option>
+            <option value="number">受付番号順</option>
+          </select>
+        </label>
+
+        <div class="actions">
+          <button id="resetFilters" type="button">条件をリセット</button>
+          <button id="downloadCsv" type="button">CSVをダウンロード</button>
+        </div>
+      </section>
+
+      <section class="notice" aria-label="注記">
+        <p id="noticeText">データを読み込み中です。</p>
+      </section>
+
+      <section class="table-section" aria-label="検索結果">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">都道府県</th>
+                <th scope="col">病院名</th>
+                <th scope="col">区分</th>
+                <th scope="col">地方</th>
+                <th scope="col">参加</th>
+                <th scope="col">受付番号</th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+        </div>
+        <p id="emptyState" class="empty-state" hidden>
+          条件に一致する病院がありません。
+        </p>
+      </section>
+
+      <section class="sources" aria-label="出典">
+        <h2>出典</h2>
+        <ul id="sourceList"></ul>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
