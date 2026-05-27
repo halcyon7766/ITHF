@@ -249,6 +249,7 @@ function downloadCsv() {
     "受付番号",
     "病院URL",
     "出典URL",
+    "レジナビURL",
   ];
   const rows = state.filtered.map((hospital) => [
     hospital.year,
@@ -264,6 +265,7 @@ function downloadCsv() {
     hospital.receptionNumber,
     hospital.hospitalUrl,
     hospital.sourceUrl,
+    hospital.reginaviSourceUrl || "",
   ]);
   const csv = [header, ...rows]
     .map((row) =>
