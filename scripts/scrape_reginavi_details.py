@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from difflib import SequenceMatcher
 from pathlib import Path
-from urllib.parse import urljoin
+from urllib.parse import urlencode, urljoin
 
 import requests
 from bs4 import BeautifulSoup
@@ -17,6 +17,17 @@ DATA_PATH = ROOT / "data" / "hospitals.json"
 BASE_URL = "https://www.residentnavi.com"
 USER_AGENT = "Mozilla/5.0 (compatible; ITHF-hospital-search/1.0; +https://github.com/halcyon7766/ITHF)"
 TARGET_FIELDS = ("quota", "beds", "salary", "emergencyCategory")
+SEARCH_PATH = "/hospital/search/early/result"
+SEARCH_BASE_PARAMS = {
+    "sites_hospital_search_form_early[hospital_category]": "",
+    "sites_hospital_search_form_early[emergency_designation]": "",
+    "sites_hospital_search_form_early[region_id]": "",
+}
+EMERGENCY_FILTERS = {
+    "primary": "1次救急",
+    "secondary": "2次救急",
+    "tertiary": "3次救急",
+}
 
 SC_PAGES = [
     ("和歌山", "wakayama"),
@@ -60,6 +71,56 @@ NOISE_WORDS = [
     "JCHO",
 ]
 
+PREFECTURES = [
+    "北海道",
+    "青森",
+    "岩手",
+    "宮城",
+    "秋田",
+    "山形",
+    "福島",
+    "茨城",
+    "栃木",
+    "群馬",
+    "埼玉",
+    "千葉",
+    "東京",
+    "神奈川",
+    "新潟",
+    "富山",
+    "石川",
+    "福井",
+    "山梨",
+    "長野",
+    "岐阜",
+    "静岡",
+    "愛知",
+    "三重",
+    "滋賀",
+    "京都",
+    "大阪",
+    "兵庫",
+    "奈良",
+    "和歌山",
+    "鳥取",
+    "島根",
+    "岡山",
+    "広島",
+    "山口",
+    "徳島",
+    "香川",
+    "愛媛",
+    "高知",
+    "福岡",
+    "佐賀",
+    "長崎",
+    "熊本",
+    "大分",
+    "宮崎",
+    "鹿児島",
+    "沖縄",
+]
+
 
 def clean_text(value):
     return re.sub(r"\s+", " ", value.replace("\xa0", " ")).strip()
@@ -87,6 +148,16 @@ def normalize_emergency(text):
         return "2次救急"
     if re.search(r"(一次|1次|１次)救急", compact):
         return "1次救急"
+    return ""
+
+
+def prefecture_from_text(text):
+    normalized = unicodedata.normalize("NFKC", text)
+    for prefecture in sorted(PREFECTURES, key=len, reverse=True):
+        if normalized.startswith(prefecture):
+            return prefecture
+        if f"{prefecture}県" in normalized or f"{prefecture}府" in normalized or f"{prefecture}都" in normalized:
+            return prefecture
     return ""
 
 
@@ -183,6 +254,148 @@ def dedupe_records(records):
         if current["sourceUrl"] == BASE_URL and record["sourceUrl"] != BASE_URL:
             current["sourceUrl"] = record["sourceUrl"]
     return list(deduped.values())
+
+
+def build_search_url(page=1, emergency_filter=None):
+    params = SEARCH_BASE_PARAMS.copy()
+    if page > 1:
+        params["page"] = str(page)
+    if emergency_filter:
+        params["sites_hospital_search_form_early[emergency_designations][]"] = emergency_filter
+    return f"{BASE_URL}{SEARCH_PATH}?{urlencode(params, doseq=True)}"
+
+
+def parse_search_card(card, source_url, emergency_category=""):
+    title_node = card.select_one(".title h3")
+    if not title_node:
+        return None
+
+    title_lines = [clean_text(text) for text in title_node.stripped_strings]
+    name = title_lines[0] if title_lines else ""
+    link_node = card.select_one('a[href*="/hospitals/"][href$="/early"]')
+    source = urljoin(BASE_URL, link_node.get("href")) if link_node else source_url
+
+    address_node = card.select_one(".text-box .text")
+    prefecture = prefecture_from_text(address_node.get_text(" ", strip=True)) if address_node else ""
+
+    values = {}
+    table = card.select_one(".m__common-table__search.pc table") or card.select_one(".m__common-table__search table")
+    if table:
+        rows = table.select("tr")
+        if len(rows) >= 2:
+            headers = [clean_text(cell.get_text(" ", strip=True)) for cell in rows[0].find_all(["th", "td"])]
+            cells = [clean_text(cell.get_text(" ", strip=True)) for cell in rows[1].find_all(["th", "td"])]
+            values = dict(zip(headers, cells))
+
+    quota = ""
+    for label, value in values.items():
+        if "募集人数" in label:
+            quota = value
+            break
+
+    return {
+        "prefecture": prefecture,
+        "name": name,
+        "sourceUrl": source,
+        "quota": quota,
+        "beds": values.get("病床数", ""),
+        "salary": "",
+        "emergencyCategory": emergency_category,
+    }
+
+
+def parse_search_result_page(html, source_url, emergency_category=""):
+    soup = BeautifulSoup(html, "lxml")
+    records = []
+    for card in soup.select(".search-box-block.early"):
+        record = parse_search_card(card, source_url, emergency_category)
+        if record:
+            records.append(record)
+    return records
+
+
+def fetch_search_page(page, timeout, emergency_filter=None):
+    url = build_search_url(page=page, emergency_filter=emergency_filter)
+    response = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=timeout)
+    if response.status_code == 404:
+        return []
+    response.raise_for_status()
+    label = EMERGENCY_FILTERS.get(emergency_filter, "")
+    return parse_search_result_page(response.text, response.url, label)
+
+
+def fetch_search_records(timeout, max_pages, emergency_filter=None):
+    records = []
+    empty_pages = 0
+    for page in range(1, max_pages + 1):
+        page_records = fetch_search_page(page, timeout, emergency_filter=emergency_filter)
+        if not page_records:
+            empty_pages += 1
+            if empty_pages >= 2:
+                break
+            continue
+        empty_pages = 0
+        records.extend(page_records)
+        print(f"search {emergency_filter or 'all'} page {page}: {len(page_records)} records")
+    return records
+
+
+def parse_salary_from_detail(html):
+    soup = BeautifulSoup(html, "lxml")
+    for dl in soup.select("dl"):
+        text = clean_text(dl.get_text(" | ", strip=True))
+        if not text.startswith("給与 |"):
+            continue
+        one_year = re.search(
+            r"卒後[１1]年次[^|]*\|\s*([^|]+(?:年収[^|]+)?)",
+            text,
+        )
+        if one_year:
+            return clean_text(one_year.group(1))
+        parts = [part.strip() for part in text.split("|") if part.strip()]
+        yen_parts = [part for part in parts if "円" in part or "万円" in part]
+        if yen_parts:
+            return yen_parts[0]
+    return ""
+
+
+def fetch_detail_salary(record, timeout):
+    if not record.get("sourceUrl"):
+        return record
+    response = requests.get(record["sourceUrl"], headers={"User-Agent": USER_AGENT}, timeout=timeout)
+    response.raise_for_status()
+    salary = parse_salary_from_detail(response.text)
+    if salary:
+        record = record.copy()
+        record["salary"] = salary
+        record["sourceUrl"] = response.url
+    return record
+
+
+def supplement_detail_salaries(records, timeout, workers, limit=None):
+    targets = [record for record in records if record.get("sourceUrl") and not record.get("salary")]
+    if limit:
+        targets = targets[:limit]
+    by_source = {record["sourceUrl"]: record for record in targets}
+    updated_by_source = {}
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {
+            executor.submit(fetch_detail_salary, record, timeout): source
+            for source, record in by_source.items()
+        }
+        for index, future in enumerate(as_completed(futures), 1):
+            source = futures[future]
+            try:
+                updated_by_source[source] = future.result()
+            except Exception as exc:
+                print(f"detail failed {source}: {exc}")
+            if index % 50 == 0:
+                print(f"detail salaries: {index}/{len(futures)}")
+
+    updated_records = []
+    for record in records:
+        updated_records.append(updated_by_source.get(record.get("sourceUrl"), record))
+    return updated_records
 
 
 def parse_reginavi_page(prefecture, html, source_url):
@@ -316,29 +529,49 @@ def apply_records(data, records, overwrite=False):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Supplement hospital details from RegiNavi prefecture pages.")
+    parser = argparse.ArgumentParser(description="Supplement hospital details from RegiNavi.")
     parser.add_argument("--timeout", type=int, default=15)
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--overwrite", action="store_true", help="Replace existing values with RegiNavi values.")
     parser.add_argument("--unmatched", type=Path, default=None, help="Optional JSON path for unmatched records.")
+    parser.add_argument("--skip-sc", action="store_true", help="Skip RegiNavi special-content pages.")
+    parser.add_argument("--include-search", action="store_true", help="Crawl RegiNavi early-residency search results.")
+    parser.add_argument("--search-pages", type=int, default=60)
+    parser.add_argument("--include-detail-salaries", action="store_true", help="Open search-result detail pages for salary.")
+    parser.add_argument("--detail-limit", type=int, default=None)
     args = parser.parse_args()
 
     data = json.loads(DATA_PATH.read_text(encoding="utf-8"))
     records = []
-    with ThreadPoolExecutor(max_workers=args.workers) as executor:
-        futures = {
-            executor.submit(fetch_page, prefecture, slug, args.timeout): slug
-            for prefecture, slug in SC_PAGES
-        }
-        for future in as_completed(futures):
-            slug = futures[future]
-            try:
-                pref_records = future.result()
-            except Exception as exc:
-                print(f"{slug}: failed: {exc}")
-                continue
-            print(f"{slug}: {len(pref_records)} records")
-            records.extend(pref_records)
+    if not args.skip_sc:
+        with ThreadPoolExecutor(max_workers=args.workers) as executor:
+            futures = {
+                executor.submit(fetch_page, prefecture, slug, args.timeout): slug
+                for prefecture, slug in SC_PAGES
+            }
+            for future in as_completed(futures):
+                slug = futures[future]
+                try:
+                    pref_records = future.result()
+                except Exception as exc:
+                    print(f"{slug}: failed: {exc}")
+                    continue
+                print(f"{slug}: {len(pref_records)} records")
+                records.extend(pref_records)
+
+    if args.include_search:
+        search_records = fetch_search_records(args.timeout, args.search_pages)
+        for emergency_filter in EMERGENCY_FILTERS:
+            search_records.extend(fetch_search_records(args.timeout, args.search_pages, emergency_filter=emergency_filter))
+        search_records = dedupe_records(search_records)
+        if args.include_detail_salaries:
+            search_records = supplement_detail_salaries(
+                search_records,
+                timeout=args.timeout,
+                workers=args.workers,
+                limit=args.detail_limit,
+            )
+        records.extend(search_records)
 
     stats, unmatched = apply_records(data, records, overwrite=args.overwrite)
     data["reginaviScrapedAt"] = datetime.now(timezone.utc).date().isoformat()
@@ -349,6 +582,12 @@ def main():
     }
     if reginavi_source not in data.get("sources", []):
         data.setdefault("sources", []).append(reginavi_source)
+    search_source = {
+        "label": "民間医局レジナビ 初期研修情報検索（補完データ）",
+        "url": f"{BASE_URL}{SEARCH_PATH}",
+    }
+    if args.include_search and search_source not in data.get("sources", []):
+        data.setdefault("sources", []).append(search_source)
 
     DATA_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     if args.unmatched:

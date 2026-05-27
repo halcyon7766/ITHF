@@ -7,11 +7,11 @@ JRMPの参加病院一覧ページに掲載されている2025年度PDFをもと
 - 2025年度 大学病院一覧: 125件
 - 2025年度 臨床研修病院一覧: 901件
 - 合計: 1,026件
-- 病院リンク先・レジナビ都道府県ページから追加取得: 救急区分、給与、募集定員、病床数
+- 病院リンク先・レジナビ検索結果/詳細ページから追加取得: 救急区分、給与、募集定員、病床数
 
 2026年度一覧は、2026年5月26日時点でJRMPページ上では準備中です。
 病院ごとの公式サイトは表記や掲載場所が統一されていないため、追加取得項目は取得できたものだけ表示します。
-未取得欄については、民間医局レジナビの都道府県別ページに構造化された情報がある場合も補完データとして採用しています。
+未取得欄については、民間医局レジナビの初期研修情報検索と詳細ページに構造化された情報がある場合も補完データとして採用しています。
 救命救急センターは3次救急として表示し、救急告示のみで次数を判定できない場合は次数不明として表示します。
 
 ## ローカル確認
@@ -32,7 +32,7 @@ python -m http.server 8000
 python -m pip install -r requirements.txt
 python scripts\build_data.py
 python scripts\scrape_hospital_details.py --workers 12 --timeout 8 --max-pages 6 --overwrite
-python scripts\scrape_reginavi_details.py --workers 8
+python scripts\scrape_reginavi_details.py --skip-sc --include-search --include-detail-salaries --workers 4
 ```
 
 ## GitHub Pages
