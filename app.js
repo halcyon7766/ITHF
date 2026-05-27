@@ -9,6 +9,7 @@ const elements = {
   totalCount: document.querySelector("#totalCount"),
   visibleCount: document.querySelector("#visibleCount"),
   keyword: document.querySelector("#keyword"),
+  excludeKeyword: document.querySelector("#excludeKeyword"),
   typeFilter: document.querySelector("#typeFilter"),
   regionFilter: document.querySelector("#regionFilter"),
   prefectureFilter: document.querySelector("#prefectureFilter"),
@@ -107,6 +108,9 @@ function normalize(value) {
 function getFilters() {
   return {
     keyword: normalize(elements.keyword.value),
+    excludeKeywords: normalize(elements.excludeKeyword.value)
+      .split(/\s+/)
+      .filter(Boolean),
     type: elements.typeFilter.value,
     region: elements.regionFilter.value,
     prefecture: elements.prefectureFilter.value,
@@ -139,11 +143,12 @@ function filterHospitals() {
   const filters = getFilters();
   const filtered = state.hospitals.filter((hospital) => {
     const keywordTarget = normalize(
-      `${hospital.name} ${hospital.prefecture} ${hospital.region} ${hospital.type} ${hospital.receptionNumber}`,
+      `${hospital.name} ${hospital.prefecture} ${hospital.region} ${hospital.type} ${hospital.receptionNumber} ${hospital.emergencyCategory} ${hospital.salary} ${hospital.quota} ${hospital.beds}`,
     );
 
     return (
       (!filters.keyword || keywordTarget.includes(filters.keyword)) &&
+      !filters.excludeKeywords.some((keyword) => keywordTarget.includes(keyword)) &&
       (!filters.type || hospital.type === filters.type) &&
       (!filters.region || hospital.region === filters.region) &&
       (!filters.prefecture || hospital.prefecture === filters.prefecture) &&
@@ -183,6 +188,10 @@ function renderResults() {
       createHospitalCell(hospital),
       createCell(hospital.type),
       createCell(hospital.region),
+      createCell(hospital.emergencyCategory || "未取得", hospital.emergencyCategory ? "" : "muted-cell"),
+      createCell(hospital.salary || "未取得", hospital.salary ? "salary-cell" : "muted-cell"),
+      createCell(hospital.quota || "未取得", hospital.quota ? "number-cell" : "muted-cell"),
+      createCell(hospital.beds || "未取得", hospital.beds ? "number-cell" : "muted-cell"),
     );
 
     const statusCell = document.createElement("td");
@@ -232,6 +241,10 @@ function downloadCsv() {
     "地方",
     "病院名",
     "病院区分",
+    "救急区分",
+    "給与",
+    "募集定員",
+    "病床数",
     "マッチング参加",
     "受付番号",
     "病院URL",
@@ -243,6 +256,10 @@ function downloadCsv() {
     hospital.region,
     hospital.name,
     hospital.type,
+    hospital.emergencyCategory,
+    hospital.salary,
+    hospital.quota,
+    hospital.beds,
     hospital.matchingParticipation ? "参加" : "不参加",
     hospital.receptionNumber,
     hospital.hospitalUrl,
@@ -267,6 +284,7 @@ function downloadCsv() {
 
 function resetFilters() {
   elements.keyword.value = "";
+  elements.excludeKeyword.value = "";
   elements.typeFilter.value = "";
   elements.regionFilter.value = "";
   resetPrefectureOptions();
@@ -279,6 +297,7 @@ function resetFilters() {
 function bindEvents() {
   [
     elements.keyword,
+    elements.excludeKeyword,
     elements.typeFilter,
     elements.regionFilter,
     elements.prefectureFilter,

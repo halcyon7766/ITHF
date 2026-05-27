@@ -170,7 +170,7 @@ def parse_source(source):
         prefecture, name, participation, reception_number = match.groups()
         rows.append(
             {
-                "id": f"2025-{source['hospital_type']}-{reception_number}",
+                "id": f"2025-{source['hospital_type']}-{len(rows) + 1}-{reception_number}",
                 "year": 2025,
                 "type": source["hospital_type"],
                 "prefecture": prefecture,
@@ -179,6 +179,12 @@ def parse_source(source):
                 "matchingParticipation": participation in {"○", "◯"},
                 "receptionNumber": int(reception_number),
                 "hospitalUrl": links[len(rows)],
+                "emergencyCategory": "",
+                "salary": "",
+                "quota": "",
+                "beds": "",
+                "scrapeStatus": "not_run",
+                "scrapeSourceUrl": "",
                 "sourceUrl": source["source_url"],
             }
         )

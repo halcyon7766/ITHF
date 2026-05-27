@@ -198,7 +198,7 @@ button#resetFilters:hover {
 
 table {
   width: 100%;
-  min-width: 820px;
+  min-width: 1180px;
   border-collapse: collapse;
 }
 
@@ -229,6 +229,15 @@ tbody tr:hover td {
 
 .number-cell,
 .status-cell {
+  white-space: nowrap;
+}
+
+.salary-cell {
+  min-width: 180px;
+}
+
+.muted-cell {
+  color: #8a94a3;
   white-space: nowrap;
 }
 
