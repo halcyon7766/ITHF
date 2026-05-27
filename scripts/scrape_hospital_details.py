@@ -129,9 +129,9 @@ def extract_emergency(text):
     if re.search(r"(一次|1次|１次)", target):
         return "1次救急"
     if "救命救急センター" in target:
-        return "救命救急センター"
+        return "3次救急（救命救急センター）"
     if "救急告示" in target:
-        return "救急告示病院"
+        return "次数不明（救急告示）"
     return ""
 
 

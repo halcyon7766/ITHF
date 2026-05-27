@@ -325,7 +325,9 @@ function bindEvents() {
 
 async function init() {
   try {
-    const response = await fetch("data/hospitals.json");
+    const response = await fetch(`data/hospitals.json?v=${Date.now()}`, {
+      cache: "no-store",
+    });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
