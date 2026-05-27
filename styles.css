@@ -140,6 +140,15 @@ select {
   padding: 8px 10px;
 }
 
+select[multiple] {
+  min-height: 118px;
+  padding: 6px;
+}
+
+select[multiple] option {
+  padding: 3px 5px;
+}
+
 input:focus,
 select:focus,
 button:focus {

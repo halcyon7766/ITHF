@@ -9,14 +9,14 @@
       content="JRMPの2025年度参加病院一覧をもとに、初期研修病院を条件で検索できます。"
     />
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="styles.css?v=20260527-2" />
+    <link rel="stylesheet" href="styles.css?v=20260527-3" />
   </head>
   <body>
     <header class="site-header">
       <div>
         <h1>初期研修病院検索</h1>
         <p>
-          JRMPの公開PDFに掲載された2025年度マッチング参加病院を、病院区分・地域・都道府県・キーワードで絞り込めます。
+          JRMPの公開PDFに掲載された2025年度マッチング参加病院を、病院区分・地方・都道府県・救急区分・キーワードで絞り込めます。
         </p>
       </div>
     </header>
@@ -67,15 +67,22 @@
 
         <label class="field">
           <span>地方</span>
-          <select id="regionFilter">
-            <option value="">すべて</option>
+          <select id="regionFilter" multiple size="4">
           </select>
         </label>
 
         <label class="field">
           <span>都道府県</span>
-          <select id="prefectureFilter">
-            <option value="">すべて</option>
+          <select id="prefectureFilter" multiple size="4">
+          </select>
+        </label>
+
+        <label class="field">
+          <span>救急区分</span>
+          <select id="emergencyFilter" multiple size="3">
+            <option value="1">1次救急</option>
+            <option value="2">2次救急</option>
+            <option value="3">3次救急</option>
           </select>
         </label>
 
@@ -138,6 +145,6 @@
       </section>
     </main>
 
-    <script src="app.js?v=20260527-2"></script>
+    <script src="app.js?v=20260527-3"></script>
   </body>
 </html>

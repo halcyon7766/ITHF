@@ -13,6 +13,7 @@ const elements = {
   typeFilter: document.querySelector("#typeFilter"),
   regionFilter: document.querySelector("#regionFilter"),
   prefectureFilter: document.querySelector("#prefectureFilter"),
+  emergencyFilter: document.querySelector("#emergencyFilter"),
   participationFilter: document.querySelector("#participationFilter"),
   sortOrder: document.querySelector("#sortOrder"),
   resetFilters: document.querySelector("#resetFilters"),
@@ -101,8 +102,32 @@ function fillSelect(select, values) {
   });
 }
 
+function fillMultiSelect(select, values, selectedValues = []) {
+  const selectedSet = new Set(selectedValues);
+  select.replaceChildren();
+  values.forEach((value) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    option.selected = selectedSet.has(value);
+    select.append(option);
+  });
+}
+
+function getSelectedValues(select) {
+  return [...select.selectedOptions].map((option) => option.value);
+}
+
 function normalize(value) {
   return String(value ?? "").toLowerCase().normalize("NFKC").trim();
+}
+
+function emergencyLevel(value) {
+  const normalized = normalize(value);
+  if (normalized.startsWith("1次救急")) return "1";
+  if (normalized.startsWith("2次救急")) return "2";
+  if (normalized.startsWith("3次救急")) return "3";
+  return "";
 }
 
 function getFilters() {
@@ -112,8 +137,9 @@ function getFilters() {
       .split(/\s+/)
       .filter(Boolean),
     type: elements.typeFilter.value,
-    region: elements.regionFilter.value,
-    prefecture: elements.prefectureFilter.value,
+    regions: getSelectedValues(elements.regionFilter),
+    prefectures: getSelectedValues(elements.prefectureFilter),
+    emergencyLevels: getSelectedValues(elements.emergencyFilter),
     participation: elements.participationFilter.value,
     sortOrder: elements.sortOrder.value,
   };
@@ -150,8 +176,10 @@ function filterHospitals() {
       (!filters.keyword || keywordTarget.includes(filters.keyword)) &&
       !filters.excludeKeywords.some((keyword) => keywordTarget.includes(keyword)) &&
       (!filters.type || hospital.type === filters.type) &&
-      (!filters.region || hospital.region === filters.region) &&
-      (!filters.prefecture || hospital.prefecture === filters.prefecture) &&
+      (!filters.regions.length || filters.regions.includes(hospital.region)) &&
+      (!filters.prefectures.length || filters.prefectures.includes(hospital.prefecture)) &&
+      (!filters.emergencyLevels.length ||
+        filters.emergencyLevels.includes(emergencyLevel(hospital.emergencyCategory))) &&
       (!filters.participation ||
         String(hospital.matchingParticipation) === filters.participation)
     );
@@ -227,11 +255,24 @@ function renderSources() {
 }
 
 function resetPrefectureOptions(prefectures = state.hospitals.map((hospital) => hospital.prefecture)) {
-  elements.prefectureFilter.replaceChildren(new Option("すべて", ""));
-  fillSelect(
-    elements.prefectureFilter,
-    prefectureOrder.filter((prefecture) => prefectures.includes(prefecture)),
+  const availablePrefectures = prefectureOrder.filter((prefecture) =>
+    prefectures.includes(prefecture),
   );
+  const selectedPrefectures = getSelectedValues(elements.prefectureFilter).filter((prefecture) =>
+    availablePrefectures.includes(prefecture),
+  );
+  fillMultiSelect(elements.prefectureFilter, availablePrefectures, selectedPrefectures);
+}
+
+function syncPrefectureOptions() {
+  const selectedRegions = getSelectedValues(elements.regionFilter);
+  const prefectures = selectedRegions.length
+    ? state.hospitals
+        .filter((hospital) => selectedRegions.includes(hospital.region))
+        .map((hospital) => hospital.prefecture)
+    : state.hospitals.map((hospital) => hospital.prefecture);
+
+  resetPrefectureOptions(prefectures);
 }
 
 function downloadCsv() {
@@ -288,9 +329,16 @@ function resetFilters() {
   elements.keyword.value = "";
   elements.excludeKeyword.value = "";
   elements.typeFilter.value = "";
-  elements.regionFilter.value = "";
+  [...elements.regionFilter.options].forEach((option) => {
+    option.selected = false;
+  });
   resetPrefectureOptions();
-  elements.prefectureFilter.value = "";
+  [...elements.prefectureFilter.options].forEach((option) => {
+    option.selected = false;
+  });
+  [...elements.emergencyFilter.options].forEach((option) => {
+    option.selected = false;
+  });
   elements.participationFilter.value = "";
   elements.sortOrder.value = "prefecture";
   filterHospitals();
@@ -303,6 +351,7 @@ function bindEvents() {
     elements.typeFilter,
     elements.regionFilter,
     elements.prefectureFilter,
+    elements.emergencyFilter,
     elements.participationFilter,
     elements.sortOrder,
   ].forEach((element) => {
@@ -310,14 +359,7 @@ function bindEvents() {
   });
 
   elements.regionFilter.addEventListener("input", () => {
-    const selectedRegion = elements.regionFilter.value;
-    const prefectures = selectedRegion
-      ? state.hospitals
-          .filter((hospital) => hospital.region === selectedRegion)
-          .map((hospital) => hospital.prefecture)
-      : state.hospitals.map((hospital) => hospital.prefecture);
-
-    resetPrefectureOptions(prefectures);
+    syncPrefectureOptions();
     filterHospitals();
   });
 
@@ -341,8 +383,11 @@ async function init() {
     elements.noticeText.textContent = `${state.data.notice} データ生成日: ${state.data.generatedAt}`;
 
     fillSelect(elements.typeFilter, uniqueValues(state.hospitals, "type"));
-    fillSelect(elements.regionFilter, uniqueValues(state.hospitals, "region", regionOrder));
-    fillSelect(
+    fillMultiSelect(
+      elements.regionFilter,
+      uniqueValues(state.hospitals, "region", regionOrder),
+    );
+    fillMultiSelect(
       elements.prefectureFilter,
       uniqueValues(state.hospitals, "prefecture", prefectureOrder),
     );
