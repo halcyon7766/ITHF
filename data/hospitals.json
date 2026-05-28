@@ -3935,17 +3935,17 @@
       "receptionNumber": 18,
       "hospitalUrl": "https://chitose-shimin-hospital.jp/",
       "emergencyCategory": "2次救急",
-      "salary": "公開情報なし",
+      "salary": "研修報酬 1年目 670万円",
       "quota": "2名",
       "beds": "190床",
       "scrapeStatus": "ok",
-      "scrapeSourceUrl": "https://chitose-shimin-hospital.jp/",
+      "scrapeSourceUrl": "https://chitose-shimin-hospital.jp/resident/syoki/pay/index.php",
       "sourceUrl": "https://www.jrmp2.jp/hospital-list/list2025-ippan.pdf",
       "detailSources": {
         "beds": "https://renewal.e-resident.jp/hospital/83/junior",
         "quota": "https://www.dnavi.jp/hospital/126/",
         "emergencyCategory": "https://www.dnavi.jp/hospital/126/",
-        "salary": "https://chitose-shimin-hospital.jp/"
+        "salary": "https://chitose-shimin-hospital.jp/resident/syoki/pay/index.php"
       },
       "eResidentSourceUrl": "https://renewal.e-resident.jp/hospital/83/junior",
       "dnaviSourceUrl": "https://www.dnavi.jp/hospital/126/"
@@ -25147,7 +25147,7 @@
   "missingFinalizedValue": "公開情報なし",
   "missingFinalizedCounts": {
     "emergencyCategory": 10,
-    "salary": 204,
+    "salary": 203,
     "quota": 9,
     "beds": 17
   }

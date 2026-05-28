@@ -189,7 +189,15 @@ def rank_detail_link(url):
 
 def is_excluded_detail_target(value):
     lowered = value.lower()
-    return any(keyword.lower() in lowered for keyword in EXCLUDED_DETAIL_KEYWORDS)
+    for keyword in EXCLUDED_DETAIL_KEYWORDS:
+        lowered_keyword = keyword.lower()
+        if lowered_keyword == "dent":
+            if re.search(r"(^|[^a-z])dent([^a-z]|$)", lowered):
+                return True
+            continue
+        if lowered_keyword in lowered:
+            return True
+    return False
 
 
 def is_crawl_only_target(value):
@@ -283,6 +291,17 @@ def extract_quota(text):
 
 
 def extract_salary(text):
+    priority_pattern = re.compile(
+        r"(月額報酬|研修報酬|研修手当)[：:\s　]*(?:【[^】]+】\s*)?"
+        r"((?:1年目|１年目|1年次|１年次).{0,40}?"
+        r"[0-9０-９,，.．]{2,10}\s*(?:万)?\s*円)"
+    )
+    for match in priority_pattern.finditer(text):
+        if has_training_context_near(text, match.start(), match.end()):
+            return normalize_space(
+                f"{match.group(1)} {normalize_digits(match.group(2))}".replace(" ", " ")
+            )
+
     labels = ["給与", "給料", "報酬", "研修手当"]
     label_pattern = "|".join(re.escape(label) for label in labels)
     yen = r"(?:月額|年額|1年次|2年次|１年次|２年次)?\s*(?:約)?\s*[0-9０-９,，.．]{2,10}\s*(?:万)?\s*円(?:程度|税込)?"
