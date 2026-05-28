@@ -1271,11 +1271,11 @@
       "receptionNumber": 464,
       "hospitalUrl": "https://www.nms.ac.jp/tama-h/",
       "emergencyCategory": "3次救急",
-      "salary": "公開情報なし",
+      "salary": "研修手当金：1年目 279,700円",
       "quota": "3名",
       "beds": "405床",
       "scrapeStatus": "ok",
-      "scrapeSourceUrl": "https://www.nms.ac.jp/tama-h/",
+      "scrapeSourceUrl": "http://www.nms.ac.jp/tama-h/info/recruit/_21980.html",
       "sourceUrl": "https://www.jrmp2.jp/hospital-list/list2025-daigaku.pdf",
       "detailSources": {
         "quota": "https://www.dnavi.jp/hospital/411/",
@@ -6297,13 +6297,13 @@
       "hospitalUrl": "https://m-soma-hsp.com/",
       "emergencyCategory": "2次救急",
       "salary": "公開情報なし",
-      "quota": "公開情報なし",
+      "quota": "1名",
       "beds": "50床",
       "scrapeStatus": "ok",
-      "scrapeSourceUrl": "https://m-soma-hsp.com/",
+      "scrapeSourceUrl": "https://m-soma-hsp.com/recruit/scholarship.html",
       "sourceUrl": "https://www.jrmp2.jp/hospital-list/list2025-ippan.pdf",
       "detailSources": {
-        "salary": "https://m-soma-hsp.com/",
+        "salary": "https://m-soma-hsp.com/recruit/scholarship.html",
         "quota": "https://m-soma-hsp.com/"
       }
     },
@@ -13599,7 +13599,7 @@
       "salary": "公開情報なし",
       "quota": "13名",
       "beds": "661床",
-      "scrapeStatus": "ok",
+      "scrapeStatus": "error: HTTPError",
       "scrapeSourceUrl": "https://chukyo.jcho.go.jp/",
       "sourceUrl": "https://www.jrmp2.jp/hospital-list/list2025-ippan.pdf",
       "detailSources": {
@@ -20907,11 +20907,11 @@
       "receptionNumber": 113,
       "hospitalUrl": "http://www.mitsugibyouin.com/",
       "emergencyCategory": "2次救急",
-      "salary": "公開情報なし",
+      "salary": "給与 （手当別） 1年次 月額 400,000円",
       "quota": "2名",
       "beds": "240床",
       "scrapeStatus": "ok",
-      "scrapeSourceUrl": "http://www.mitsugibyouin.com/",
+      "scrapeSourceUrl": "http://www.mitsugibyouin.com/clinical-training/early-stage/recruit/",
       "sourceUrl": "https://www.jrmp2.jp/hospital-list/list2025-ippan.pdf",
       "detailSources": {
         "quota": "https://www.dnavi.jp/hospital/934/",
@@ -24533,11 +24533,11 @@
       "receptionNumber": 844,
       "hospitalUrl": "http://hospital.pref.kagoshima.jp/oshima/",
       "emergencyCategory": "3次救急（救命救急センター）",
-      "salary": "公開情報なし",
+      "salary": "給与 1年次 日額15,800円",
       "quota": "8名",
       "beds": "269床",
       "scrapeStatus": "ok",
-      "scrapeSourceUrl": "https://hospital.pref.kagoshima.jp/oshima/",
+      "scrapeSourceUrl": "https://hospital.pref.kagoshima.jp/recruitment/contents.html",
       "sourceUrl": "https://www.jrmp2.jp/hospital-list/list2025-ippan.pdf",
       "detailSources": {
         "quota": "https://www.dnavi.jp/hospital/1097/",
@@ -25147,8 +25147,8 @@
   "missingFinalizedValue": "公開情報なし",
   "missingFinalizedCounts": {
     "emergencyCategory": 19,
-    "salary": 254,
-    "quota": 18,
+    "salary": 251,
+    "quota": 17,
     "beds": 27
   }
 }

@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "hospitals.json"
 USER_AGENT = "ITHF-hospital-search/1.0 (+https://github.com/halcyon7766/ITHF)"
 TARGET_FIELDS = ["emergencyCategory", "salary", "quota", "beds"]
+UNAVAILABLE = "公開情報なし"
 DETAIL_KEYWORDS = [
     "初期研修",
     "初期臨床研修",
@@ -166,6 +167,10 @@ def is_crawl_only_target(value):
     return has_crawl_keyword and not has_detail_keyword
 
 
+def is_missing_detail(value):
+    return not value or value == UNAVAILABLE
+
+
 def has_training_context(text):
     return bool(
         re.search(
@@ -267,14 +272,20 @@ def extract_details(text):
 
 
 def score_details(details):
-    return sum(1 for key in TARGET_FIELDS if details.get(key))
+    return sum(1 for key in TARGET_FIELDS if not is_missing_detail(details.get(key)))
 
 
 def scrape_one(index, hospital, timeout, max_pages, preserve_existing):
     session = requests.Session()
     session.headers.update({"User-Agent": USER_AGENT})
     tried = []
-    best = {key: hospital.get(key, "") for key in TARGET_FIELDS} if preserve_existing else {key: "" for key in TARGET_FIELDS}
+    if preserve_existing:
+        best = {
+            key: "" if is_missing_detail(hospital.get(key, "")) else hospital.get(key, "")
+            for key in TARGET_FIELDS
+        }
+    else:
+        best = {key: "" for key in TARGET_FIELDS}
     field_sources = {}
 
     try:
@@ -285,7 +296,7 @@ def scrape_one(index, hospital, timeout, max_pages, preserve_existing):
 
         details = extract_details(text)
         for key, value in details.items():
-            if value and not best[key]:
+            if value and is_missing_detail(best[key]):
                 best[key] = value
                 field_sources[key] = final_url
 
@@ -299,10 +310,10 @@ def scrape_one(index, hospital, timeout, max_pages, preserve_existing):
                 tried.append(final_url)
                 if not text:
                     continue
-                if not is_crawl_only_target(url):
+                if not is_crawl_only_target(url) or has_training_context(text):
                     details = extract_details(text)
                     for key, value in details.items():
-                        if value and not best[key]:
+                        if value and is_missing_detail(best[key]):
                             best[key] = value
                             field_sources[key] = final_url
                 for nested in nested_links:
@@ -339,7 +350,7 @@ def main():
         targets = [
             (index, hospital)
             for index, hospital in enumerate(hospitals)
-            if any(not hospital.get(key) for key in TARGET_FIELDS)
+            if any(is_missing_detail(hospital.get(key)) for key in TARGET_FIELDS)
         ]
     else:
         targets = [
