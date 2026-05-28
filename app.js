@@ -4,6 +4,8 @@ const state = {
   filtered: [],
 };
 
+const unavailableValue = "公開情報なし";
+
 const elements = {
   datasetYear: document.querySelector("#datasetYear"),
   totalCount: document.querySelector("#totalCount"),
@@ -15,6 +17,8 @@ const elements = {
   prefectureFilter: document.querySelector("#prefectureFilter"),
   emergencyFilter: document.querySelector("#emergencyFilter"),
   participationFilter: document.querySelector("#participationFilter"),
+  quotaMin: document.querySelector("#quotaMin"),
+  quotaMax: document.querySelector("#quotaMax"),
   sortOrder: document.querySelector("#sortOrder"),
   resetFilters: document.querySelector("#resetFilters"),
   downloadCsv: document.querySelector("#downloadCsv"),
@@ -130,6 +134,17 @@ function emergencyLevel(value) {
   return "";
 }
 
+function parseNumberFilter(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && value !== "" ? number : null;
+}
+
+function quotaNumber(value) {
+  if (!value || value === unavailableValue) return null;
+  const match = normalize(value).match(/\d+/);
+  return match ? Number(match[0]) : null;
+}
+
 function getFilters() {
   return {
     keyword: normalize(elements.keyword.value),
@@ -141,6 +156,8 @@ function getFilters() {
     prefectures: getSelectedValues(elements.prefectureFilter),
     emergencyLevels: getSelectedValues(elements.emergencyFilter),
     participation: elements.participationFilter.value,
+    quotaMin: parseNumberFilter(elements.quotaMin.value),
+    quotaMax: parseNumberFilter(elements.quotaMax.value),
     sortOrder: elements.sortOrder.value,
   };
 }
@@ -168,6 +185,7 @@ function sortHospitals(items, sortOrder) {
 function filterHospitals() {
   const filters = getFilters();
   const filtered = state.hospitals.filter((hospital) => {
+    const quota = quotaNumber(hospital.quota);
     const keywordTarget = normalize(
       `${hospital.name} ${hospital.prefecture} ${hospital.region} ${hospital.type} ${hospital.receptionNumber} ${hospital.emergencyCategory} ${hospital.salary} ${hospital.quota} ${hospital.beds}`,
     );
@@ -181,7 +199,9 @@ function filterHospitals() {
       (!filters.emergencyLevels.length ||
         filters.emergencyLevels.includes(emergencyLevel(hospital.emergencyCategory))) &&
       (!filters.participation ||
-        String(hospital.matchingParticipation) === filters.participation)
+        String(hospital.matchingParticipation) === filters.participation) &&
+      (filters.quotaMin === null || (quota !== null && quota >= filters.quotaMin)) &&
+      (filters.quotaMax === null || (quota !== null && quota <= filters.quotaMax))
     );
   });
 
@@ -207,6 +227,11 @@ function createHospitalCell(hospital) {
   return cell;
 }
 
+function createDetailCell(value, populatedClass = "") {
+  const isUnavailable = value === unavailableValue;
+  return createCell(value || "未取得", value && !isUnavailable ? populatedClass : "muted-cell");
+}
+
 function renderResults() {
   const fragment = document.createDocumentFragment();
   state.filtered.forEach((hospital) => {
@@ -216,10 +241,10 @@ function renderResults() {
       createHospitalCell(hospital),
       createCell(hospital.type),
       createCell(hospital.region),
-      createCell(hospital.emergencyCategory || "未取得", hospital.emergencyCategory ? "" : "muted-cell"),
-      createCell(hospital.salary || "未取得", hospital.salary ? "salary-cell" : "muted-cell"),
-      createCell(hospital.quota || "未取得", hospital.quota ? "number-cell" : "muted-cell"),
-      createCell(hospital.beds || "未取得", hospital.beds ? "number-cell" : "muted-cell"),
+      createDetailCell(hospital.emergencyCategory),
+      createDetailCell(hospital.salary, "salary-cell"),
+      createDetailCell(hospital.quota, "number-cell"),
+      createDetailCell(hospital.beds, "number-cell"),
     );
 
     const statusCell = document.createElement("td");
@@ -340,6 +365,8 @@ function resetFilters() {
     option.selected = false;
   });
   elements.participationFilter.value = "";
+  elements.quotaMin.value = "";
+  elements.quotaMax.value = "";
   elements.sortOrder.value = "prefecture";
   filterHospitals();
 }
@@ -353,6 +380,8 @@ function bindEvents() {
     elements.prefectureFilter,
     elements.emergencyFilter,
     elements.participationFilter,
+    elements.quotaMin,
+    elements.quotaMax,
     elements.sortOrder,
   ].forEach((element) => {
     element.addEventListener("input", filterHospitals);

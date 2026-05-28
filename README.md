@@ -10,8 +10,9 @@ JRMPの参加病院一覧ページに掲載されている2025年度PDFをもと
 - 病院リンク先・レジナビ検索結果/詳細ページから追加取得: 救急区分、給与、募集定員、病床数
 
 2026年度一覧は、2026年5月26日時点でJRMPページ上では準備中です。
-病院ごとの公式サイトは表記や掲載場所が統一されていないため、追加取得項目は取得できたものだけ表示します。
+病院ごとの公式サイトは表記や掲載場所が統一されていないため、追加取得項目は複数ソースで補完し、公開ソース上で確認できなかった項目は「公開情報なし」として明示します。
 未取得欄については、民間医局レジナビの初期研修情報検索と詳細ページに構造化された情報がある場合も補完データとして採用しています。
+レジナビで照合できない病院は、e-resident、医師ナビ、病院公式サイトの巡回結果で補完しています。
 救命救急センターは3次救急として表示し、救急告示のみで次数を判定できない場合は次数不明として表示します。
 
 ## ローカル確認
@@ -33,6 +34,9 @@ python -m pip install -r requirements.txt
 python scripts\build_data.py
 python scripts\scrape_hospital_details.py --workers 12 --timeout 8 --max-pages 6 --overwrite
 python scripts\scrape_reginavi_details.py --skip-sc --include-search --include-detail-salaries --workers 4
+python scripts\scrape_eresident_details.py --include-youkou --workers 12 --timeout 20 --pages 72
+python scripts\scrape_dnavi_details.py --workers 12 --timeout 20 --pages 54
+python scripts\finalize_missing_details.py
 ```
 
 ## GitHub Pages

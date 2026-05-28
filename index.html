@@ -9,7 +9,7 @@
       content="JRMPの2025年度参加病院一覧をもとに、初期研修病院を条件で検索できます。"
     />
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="styles.css?v=20260527-3" />
+    <link rel="stylesheet" href="styles.css?v=20260528-1" />
   </head>
   <body>
     <header class="site-header">
@@ -95,6 +95,26 @@
           </select>
         </label>
 
+        <label class="field quota-field">
+          <span>募集定員</span>
+          <div class="range-inputs">
+            <input
+              id="quotaMin"
+              type="number"
+              min="0"
+              inputmode="numeric"
+              placeholder="下限"
+            />
+            <input
+              id="quotaMax"
+              type="number"
+              min="0"
+              inputmode="numeric"
+              placeholder="上限"
+            />
+          </div>
+        </label>
+
         <label class="field">
           <span>並び順</span>
           <select id="sortOrder">
@@ -145,6 +165,6 @@
       </section>
     </main>
 
-    <script src="app.js?v=20260527-3"></script>
+    <script src="app.js?v=20260528-1"></script>
   </body>
 </html>
