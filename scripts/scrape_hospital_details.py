@@ -75,8 +75,26 @@ EXCLUDED_DETAIL_KEYWORDS = [
     "kouki",
     "gijutusyoku",
     "技術職",
+    "事務職",
+    "医療事務",
+    "調理",
+    "調理師",
+    "栄養士",
+    "管理栄養士",
+    "薬剤",
+    "薬剤師",
+    "臨床検査",
+    "臨床工学",
+    "診療放射線",
+    "理学療法",
+    "作業療法",
+    "言語聴覚",
+    "社会福祉士",
+    "ソーシャルワーカー",
+    "保育士",
     "看護",
     "nurse",
+    "chef",
 ]
 
 
@@ -118,12 +136,26 @@ def html_to_text_and_links(html, base_url):
     links = []
     base_host = urlparse(base_url).netloc
     for anchor in soup.find_all("a", href=True):
-        label = normalize_space(anchor.get_text(" "))
+        alt_text = " ".join(
+            normalize_space(image.get("alt", "")) for image in anchor.find_all("img")
+        )
+        label = normalize_space(
+            " ".join(
+                [
+                    anchor.get("aria-label", ""),
+                    anchor.get("title", ""),
+                    anchor.get_text(" "),
+                    alt_text,
+                ]
+            )
+        )
         href = urljoin(base_url, anchor["href"])
         parsed = urlparse(href)
         if parsed.scheme not in {"http", "https"}:
             continue
         same_host = parsed.netloc == base_host
+        if not same_host:
+            continue
         combined = f"{label} {href}".lower()
         if is_excluded_detail_target(combined):
             continue
@@ -257,7 +289,10 @@ def extract_salary(text):
     pattern = re.compile(rf"({label_pattern}).{{0,80}}?({yen})")
     for match in pattern.finditer(text):
         if has_training_context_near(text, match.start(), match.end()):
-            return normalize_space(normalize_digits(match.group(0))[:100])
+            value = normalize_space(normalize_digits(match.group(0))[:100])
+            if "給与規程" in value and re.search(r"(住宅手当|住居手当|通勤手当|当直帯)", value):
+                continue
+            return value
 
     return ""
 
@@ -300,10 +335,15 @@ def scrape_one(index, hospital, timeout, max_pages, preserve_existing):
                 best[key] = value
                 field_sources[key] = final_url
 
-        for url in links[: max(0, max_pages - 1)]:
+        cursor = 0
+        while cursor < len(links) and len(tried) < max_pages:
+            url = links[cursor]
+            cursor += 1
             if score_details(best) == len(TARGET_FIELDS):
                 break
             if is_excluded_detail_target(url):
+                continue
+            if url in tried:
                 continue
             try:
                 text, final_url, nested_links = fetch_document(session, url, timeout)
