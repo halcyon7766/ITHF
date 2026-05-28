@@ -9,7 +9,7 @@
       content="JRMPの2025年度参加病院一覧をもとに、初期研修病院を条件で検索できます。"
     />
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="styles.css?v=20260528-1" />
+    <link rel="stylesheet" href="styles.css?v=20260528-2" />
   </head>
   <body>
     <header class="site-header">
@@ -38,91 +38,113 @@
       </section>
 
       <section class="filters" aria-label="検索条件">
-        <label class="field field-wide">
-          <span>キーワード</span>
-          <input
-            id="keyword"
-            type="search"
-            placeholder="病院名・受付番号で検索"
-            autocomplete="off"
-          />
-        </label>
-
-        <label class="field field-wide">
-          <span>除外キーワード</span>
-          <input
-            id="excludeKeyword"
-            type="search"
-            placeholder="含めたくない語をスペース区切りで入力"
-            autocomplete="off"
-          />
-        </label>
-
-        <label class="field">
-          <span>病院区分</span>
-          <select id="typeFilter">
-            <option value="">すべて</option>
-          </select>
-        </label>
-
-        <label class="field">
-          <span>地方</span>
-          <select id="regionFilter" multiple size="4">
-          </select>
-        </label>
-
-        <label class="field">
-          <span>都道府県</span>
-          <select id="prefectureFilter" multiple size="4">
-          </select>
-        </label>
-
-        <label class="field">
-          <span>救急区分</span>
-          <select id="emergencyFilter" multiple size="3">
-            <option value="1">1次救急</option>
-            <option value="2">2次救急</option>
-            <option value="3">3次救急</option>
-          </select>
-        </label>
-
-        <label class="field">
-          <span>参加状況</span>
-          <select id="participationFilter">
-            <option value="">すべて</option>
-            <option value="true">マッチング参加</option>
-            <option value="false">不参加</option>
-          </select>
-        </label>
-
-        <label class="field quota-field">
-          <span>募集定員</span>
-          <div class="range-inputs">
-            <input
-              id="quotaMin"
-              type="number"
-              min="0"
-              inputmode="numeric"
-              placeholder="下限"
-            />
-            <input
-              id="quotaMax"
-              type="number"
-              min="0"
-              inputmode="numeric"
-              placeholder="上限"
-            />
+        <div class="filter-header">
+          <div>
+            <h2>検索条件</h2>
+            <p id="filterSummary">全件表示中</p>
           </div>
-        </label>
+          <button
+            id="toggleAdvancedFilters"
+            class="filter-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="advancedFilters"
+          >
+            詳細条件を開く
+          </button>
+        </div>
 
-        <label class="field">
-          <span>並び順</span>
-          <select id="sortOrder">
-            <option value="prefecture">都道府県順</option>
-            <option value="name">病院名順</option>
-            <option value="number">受付番号順</option>
-          </select>
-        </label>
+        <div class="filter-groups">
+          <label class="field field-wide">
+            <span>キーワード</span>
+            <input
+              id="keyword"
+              type="search"
+              placeholder="病院名・受付番号で検索"
+              autocomplete="off"
+            />
+          </label>
+
+          <label class="field">
+            <span>病院区分</span>
+            <select id="typeFilter">
+              <option value="">すべて</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>参加状況</span>
+            <select id="participationFilter">
+              <option value="">すべて</option>
+              <option value="true">マッチング参加</option>
+              <option value="false">不参加</option>
+            </select>
+          </label>
+
+          <label class="field quota-field">
+            <span>募集定員</span>
+            <div class="range-inputs">
+              <input
+                id="quotaMin"
+                type="number"
+                min="0"
+                inputmode="numeric"
+                placeholder="下限"
+              />
+              <input
+                id="quotaMax"
+                type="number"
+                min="0"
+                inputmode="numeric"
+                placeholder="上限"
+              />
+            </div>
+          </label>
+
+          <label class="field">
+            <span>並び順</span>
+            <select id="sortOrder">
+              <option value="prefecture">都道府県順</option>
+              <option value="name">病院名順</option>
+              <option value="number">受付番号順</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="advancedFilters" class="filter-groups advanced-filters" hidden>
+          <label class="field field-wide">
+            <span>除外キーワード</span>
+            <input
+              id="excludeKeyword"
+              type="search"
+              placeholder="含めたくない語をスペース区切りで入力"
+              autocomplete="off"
+            />
+          </label>
+
+          <label class="field">
+            <span>地方</span>
+            <select id="regionFilter" multiple size="4">
+            </select>
+          </label>
+
+          <label class="field">
+            <span>都道府県</span>
+            <select id="prefectureFilter" multiple size="4">
+            </select>
+          </label>
+
+          <label class="field">
+            <span>救急区分</span>
+            <select id="emergencyFilter" multiple size="3">
+              <option value="1">1次救急</option>
+              <option value="2">2次救急</option>
+              <option value="3">3次救急</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="activeFilters" class="active-filters" aria-live="polite" hidden></div>
 
         <div class="actions">
           <button id="resetFilters" type="button">条件をリセット</button>
@@ -165,6 +187,6 @@
       </section>
     </main>
 
-    <script src="app.js?v=20260528-1"></script>
+    <script src="app.js?v=20260528-2"></script>
   </body>
 </html>

@@ -20,6 +20,10 @@ const elements = {
   quotaMin: document.querySelector("#quotaMin"),
   quotaMax: document.querySelector("#quotaMax"),
   sortOrder: document.querySelector("#sortOrder"),
+  toggleAdvancedFilters: document.querySelector("#toggleAdvancedFilters"),
+  advancedFilters: document.querySelector("#advancedFilters"),
+  activeFilters: document.querySelector("#activeFilters"),
+  filterSummary: document.querySelector("#filterSummary"),
   resetFilters: document.querySelector("#resetFilters"),
   downloadCsv: document.querySelector("#downloadCsv"),
   noticeText: document.querySelector("#noticeText"),
@@ -122,6 +126,10 @@ function getSelectedValues(select) {
   return [...select.selectedOptions].map((option) => option.value);
 }
 
+function selectedLabels(select) {
+  return [...select.selectedOptions].map((option) => option.textContent);
+}
+
 function normalize(value) {
   return String(value ?? "").toLowerCase().normalize("NFKC").trim();
 }
@@ -207,6 +215,51 @@ function filterHospitals() {
 
   state.filtered = sortHospitals(filtered, filters.sortOrder);
   renderResults();
+  renderFilterState(filters);
+}
+
+function addChip(fragment, label) {
+  const chip = document.createElement("span");
+  chip.className = "filter-chip";
+  chip.textContent = label;
+  fragment.append(chip);
+}
+
+function renderFilterState(filters) {
+  const fragment = document.createDocumentFragment();
+  const selectedRegions = selectedLabels(elements.regionFilter);
+  const selectedPrefectures = selectedLabels(elements.prefectureFilter);
+  const selectedEmergencyLevels = selectedLabels(elements.emergencyFilter);
+  let activeCount = 0;
+
+  const add = (condition, label) => {
+    if (!condition) return;
+    activeCount += 1;
+    addChip(fragment, label);
+  };
+
+  add(filters.keyword, `検索: ${elements.keyword.value.trim()}`);
+  add(filters.excludeKeywords.length, `除外: ${elements.excludeKeyword.value.trim()}`);
+  add(filters.type, `区分: ${filters.type}`);
+  add(filters.participation, `参加: ${elements.participationFilter.selectedOptions[0].textContent}`);
+  add(filters.quotaMin !== null || filters.quotaMax !== null, `定員: ${filters.quotaMin ?? 0}〜${filters.quotaMax ?? "上限なし"}名`);
+  add(selectedRegions.length, `地方: ${selectedRegions.join("、")}`);
+  add(selectedPrefectures.length, `都道府県: ${selectedPrefectures.join("、")}`);
+  add(selectedEmergencyLevels.length, `救急: ${selectedEmergencyLevels.join("、")}`);
+
+  elements.activeFilters.replaceChildren(fragment);
+  elements.activeFilters.hidden = activeCount === 0;
+  elements.filterSummary.textContent = activeCount
+    ? `${activeCount}条件で絞り込み中`
+    : "全件表示中";
+}
+
+function setAdvancedFiltersExpanded(expanded) {
+  elements.advancedFilters.hidden = !expanded;
+  elements.toggleAdvancedFilters.setAttribute("aria-expanded", String(expanded));
+  elements.toggleAdvancedFilters.textContent = expanded
+    ? "詳細条件を閉じる"
+    : "詳細条件を開く";
 }
 
 function createCell(text, className = "") {
@@ -390,6 +443,12 @@ function bindEvents() {
   elements.regionFilter.addEventListener("input", () => {
     syncPrefectureOptions();
     filterHospitals();
+  });
+
+  elements.toggleAdvancedFilters.addEventListener("click", () => {
+    const expanded =
+      elements.toggleAdvancedFilters.getAttribute("aria-expanded") === "true";
+    setAdvancedFiltersExpanded(!expanded);
   });
 
   elements.resetFilters.addEventListener("click", resetFilters);

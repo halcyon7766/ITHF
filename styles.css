@@ -101,11 +101,50 @@ main {
 }
 
 .filters {
+  margin-top: 18px;
+  padding: 18px;
+}
+
+.filter-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.filter-header h2 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+
+.filter-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.filter-toggle {
+  min-width: 142px;
+  background: #fff;
+  color: var(--accent);
+}
+
+.filter-toggle:hover {
+  background: #eef6fc;
+}
+
+.filter-groups {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 16px;
-  margin-top: 18px;
-  padding: 18px;
+}
+
+.advanced-filters {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
 }
 
 .field {
@@ -146,6 +185,26 @@ select {
   gap: 8px;
 }
 
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border: 1px solid #bfd7ea;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: #f2f8fc;
+  color: #174b72;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
 select[multiple] {
   min-height: 118px;
   padding: 6px;
@@ -163,10 +222,10 @@ button:focus {
 }
 
 .actions {
-  grid-column: span 2;
   display: flex;
   align-items: end;
   gap: 10px;
+  margin-top: 16px;
 }
 
 button {
@@ -315,6 +374,15 @@ td a:hover {
   }
 
   .filters {
+    padding: 16px;
+  }
+
+  .filter-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .filter-groups {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -331,6 +399,10 @@ td a:hover {
   }
 
   .filters {
+    padding: 14px;
+  }
+
+  .filter-groups {
     grid-template-columns: 1fr;
   }
 
