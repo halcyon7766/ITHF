@@ -6,17 +6,17 @@
     <title>初期研修病院検索</title>
     <meta
       name="description"
-      content="JRMPの2025年度参加病院一覧をもとに、初期研修病院を条件で検索できます。"
+      content="JRMPの2025年度病院一覧をもとに、初期研修病院を条件で検索できます。"
     />
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="styles.css?v=20260528-2" />
+    <link rel="stylesheet" href="styles.css?v=20260530-1" />
   </head>
   <body>
     <header class="site-header">
       <div>
         <h1>初期研修病院検索</h1>
         <p>
-          JRMPの公開PDFに掲載された2025年度マッチング参加病院を、病院区分・地方・都道府県・救急区分・キーワードで絞り込めます。
+          JRMPの公開PDFに掲載された2025年度病院一覧を、病院区分・地方・都道府県・救急区分・キーワードで絞り込めます。
         </p>
       </div>
     </header>
@@ -60,7 +60,7 @@
             <input
               id="keyword"
               type="search"
-              placeholder="病院名・受付番号で検索"
+              placeholder="病院名・都道府県などで検索"
               autocomplete="off"
             />
           </label>
@@ -69,15 +69,6 @@
             <span>病院区分</span>
             <select id="typeFilter">
               <option value="">すべて</option>
-            </select>
-          </label>
-
-          <label class="field">
-            <span>参加状況</span>
-            <select id="participationFilter">
-              <option value="">すべて</option>
-              <option value="true">マッチング参加</option>
-              <option value="false">不参加</option>
             </select>
           </label>
 
@@ -103,10 +94,23 @@
 
           <label class="field">
             <span>並び順</span>
-            <select id="sortOrder">
+            <select id="sortField">
               <option value="prefecture">都道府県順</option>
               <option value="name">病院名順</option>
-              <option value="number">受付番号順</option>
+              <option value="type">病院区分順</option>
+              <option value="region">地方順</option>
+              <option value="emergency">救急区分順</option>
+              <option value="salary">給与順</option>
+              <option value="quota">募集定員順</option>
+              <option value="beds">病床数順</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>方向</span>
+            <select id="sortDirection">
+              <option value="asc">昇順</option>
+              <option value="desc">降順</option>
             </select>
           </label>
         </div>
@@ -169,8 +173,6 @@
                 <th scope="col">給与</th>
                 <th scope="col">募集定員</th>
                 <th scope="col">病床数</th>
-                <th scope="col">参加</th>
-                <th scope="col">受付番号</th>
               </tr>
             </thead>
             <tbody id="resultsBody"></tbody>
@@ -187,6 +189,6 @@
       </section>
     </main>
 
-    <script src="app.js?v=20260528-2"></script>
+    <script src="app.js?v=20260530-1"></script>
   </body>
 </html>

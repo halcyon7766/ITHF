@@ -16,10 +16,10 @@ const elements = {
   regionFilter: document.querySelector("#regionFilter"),
   prefectureFilter: document.querySelector("#prefectureFilter"),
   emergencyFilter: document.querySelector("#emergencyFilter"),
-  participationFilter: document.querySelector("#participationFilter"),
   quotaMin: document.querySelector("#quotaMin"),
   quotaMax: document.querySelector("#quotaMax"),
-  sortOrder: document.querySelector("#sortOrder"),
+  sortField: document.querySelector("#sortField"),
+  sortDirection: document.querySelector("#sortDirection"),
   toggleAdvancedFilters: document.querySelector("#toggleAdvancedFilters"),
   advancedFilters: document.querySelector("#advancedFilters"),
   activeFilters: document.querySelector("#activeFilters"),
@@ -149,8 +149,25 @@ function parseNumberFilter(value) {
 
 function quotaNumber(value) {
   if (!value || value === unavailableValue) return null;
-  const match = normalize(value).match(/\d+/);
-  return match ? Number(match[0]) : null;
+  return metricNumber(value);
+}
+
+function metricNumber(value) {
+  if (!value || value === unavailableValue) return null;
+  const normalized = normalize(value).replaceAll(",", "");
+  const match = normalized.match(/(\d+(?:\.\d+)?)\s*(万円|万\s*円|円|名|床)/);
+  if (match) {
+    const number = Number(match[1]);
+    if (!Number.isFinite(number)) return null;
+    return match[2].startsWith("万") ? number * 10000 : number;
+  }
+
+  const fallbackMatch = normalized.match(/\d+(?:\.\d+)?/);
+  if (!fallbackMatch) return null;
+
+  const number = Number(fallbackMatch[0]);
+  if (!Number.isFinite(number)) return null;
+  return number;
 }
 
 function getFilters() {
@@ -163,30 +180,69 @@ function getFilters() {
     regions: getSelectedValues(elements.regionFilter),
     prefectures: getSelectedValues(elements.prefectureFilter),
     emergencyLevels: getSelectedValues(elements.emergencyFilter),
-    participation: elements.participationFilter.value,
     quotaMin: parseNumberFilter(elements.quotaMin.value),
     quotaMax: parseNumberFilter(elements.quotaMax.value),
-    sortOrder: elements.sortOrder.value,
+    sortField: elements.sortField.value,
+    sortDirection: elements.sortDirection.value,
   };
 }
 
-function compareByPrefecture(a, b) {
-  const prefDiff =
-    prefectureOrder.indexOf(a.prefecture) - prefectureOrder.indexOf(b.prefecture);
-  if (prefDiff !== 0) return prefDiff;
-  if (a.type !== b.type) return a.type.localeCompare(b.type, "ja");
-  return a.receptionNumber - b.receptionNumber;
+function prefectureIndex(prefecture) {
+  const index = prefectureOrder.indexOf(prefecture);
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 }
 
-function sortHospitals(items, sortOrder) {
+function regionIndex(region) {
+  const index = regionOrder.indexOf(region);
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+}
+
+function compareByPrefecture(a, b) {
+  const prefDiff = prefectureIndex(a.prefecture) - prefectureIndex(b.prefecture);
+  if (prefDiff !== 0) return prefDiff;
+  if (a.type !== b.type) return a.type.localeCompare(b.type, "ja");
+  return a.name.localeCompare(b.name, "ja");
+}
+
+function sortValue(hospital, sortField) {
+  if (sortField === "name") return hospital.name;
+  if (sortField === "type") return hospital.type;
+  if (sortField === "region") return regionIndex(hospital.region);
+  if (sortField === "emergency") return emergencyLevel(hospital.emergencyCategory)
+    ? Number(emergencyLevel(hospital.emergencyCategory))
+    : null;
+  if (sortField === "salary") return metricNumber(hospital.salary);
+  if (sortField === "quota") return metricNumber(hospital.quota);
+  if (sortField === "beds") return metricNumber(hospital.beds);
+  return prefectureIndex(hospital.prefecture);
+}
+
+function compareNullable(a, b, direction) {
+  const aMissing = a === null || a === undefined || a === "";
+  const bMissing = b === null || b === undefined || b === "";
+  if (aMissing && bMissing) return 0;
+  if (aMissing) return 1;
+  if (bMissing) return -1;
+
+  const diff =
+    typeof a === "number" && typeof b === "number"
+      ? a - b
+      : String(a).localeCompare(String(b), "ja", { numeric: true });
+
+  return direction === "desc" ? -diff : diff;
+}
+
+function sortHospitals(items, sortField, sortDirection) {
   const sorted = [...items];
-  if (sortOrder === "name") {
-    sorted.sort((a, b) => a.name.localeCompare(b.name, "ja"));
-  } else if (sortOrder === "number") {
-    sorted.sort((a, b) => a.receptionNumber - b.receptionNumber);
-  } else {
-    sorted.sort(compareByPrefecture);
-  }
+  sorted.sort((a, b) => {
+    const primary = compareNullable(
+      sortValue(a, sortField),
+      sortValue(b, sortField),
+      sortDirection,
+    );
+    if (primary !== 0) return primary;
+    return compareByPrefecture(a, b);
+  });
   return sorted;
 }
 
@@ -195,7 +251,7 @@ function filterHospitals() {
   const filtered = state.hospitals.filter((hospital) => {
     const quota = quotaNumber(hospital.quota);
     const keywordTarget = normalize(
-      `${hospital.name} ${hospital.prefecture} ${hospital.region} ${hospital.type} ${hospital.receptionNumber} ${hospital.emergencyCategory} ${hospital.salary} ${hospital.quota} ${hospital.beds}`,
+      `${hospital.name} ${hospital.prefecture} ${hospital.region} ${hospital.type} ${hospital.emergencyCategory} ${hospital.salary} ${hospital.quota} ${hospital.beds}`,
     );
 
     return (
@@ -206,14 +262,12 @@ function filterHospitals() {
       (!filters.prefectures.length || filters.prefectures.includes(hospital.prefecture)) &&
       (!filters.emergencyLevels.length ||
         filters.emergencyLevels.includes(emergencyLevel(hospital.emergencyCategory))) &&
-      (!filters.participation ||
-        String(hospital.matchingParticipation) === filters.participation) &&
       (filters.quotaMin === null || (quota !== null && quota >= filters.quotaMin)) &&
       (filters.quotaMax === null || (quota !== null && quota <= filters.quotaMax))
     );
   });
 
-  state.filtered = sortHospitals(filtered, filters.sortOrder);
+  state.filtered = sortHospitals(filtered, filters.sortField, filters.sortDirection);
   renderResults();
   renderFilterState(filters);
 }
@@ -241,7 +295,6 @@ function renderFilterState(filters) {
   add(filters.keyword, `検索: ${elements.keyword.value.trim()}`);
   add(filters.excludeKeywords.length, `除外: ${elements.excludeKeyword.value.trim()}`);
   add(filters.type, `区分: ${filters.type}`);
-  add(filters.participation, `参加: ${elements.participationFilter.selectedOptions[0].textContent}`);
   add(filters.quotaMin !== null || filters.quotaMax !== null, `定員: ${filters.quotaMin ?? 0}〜${filters.quotaMax ?? "上限なし"}名`);
   add(selectedRegions.length, `地方: ${selectedRegions.join("、")}`);
   add(selectedPrefectures.length, `都道府県: ${selectedPrefectures.join("、")}`);
@@ -300,15 +353,6 @@ function renderResults() {
       createDetailCell(hospital.beds, "number-cell"),
     );
 
-    const statusCell = document.createElement("td");
-    statusCell.className = "status-cell";
-    const status = document.createElement("span");
-    status.className = hospital.matchingParticipation
-      ? "status-badge"
-      : "status-badge is-off";
-    status.textContent = hospital.matchingParticipation ? "参加" : "不参加";
-    statusCell.append(status);
-    row.append(statusCell, createCell(hospital.receptionNumber, "number-cell"));
     fragment.append(row);
   });
 
@@ -325,7 +369,7 @@ function renderSources() {
     link.href = source.url;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
-    link.textContent = source.label;
+    link.textContent = source.label.replace("参加病院", "病院");
     item.append(link);
     fragment.append(item);
   });
@@ -364,8 +408,6 @@ function downloadCsv() {
     "給与",
     "募集定員",
     "病床数",
-    "マッチング参加",
-    "受付番号",
     "病院URL",
     "出典URL",
     "レジナビURL",
@@ -380,8 +422,6 @@ function downloadCsv() {
     hospital.salary,
     hospital.quota,
     hospital.beds,
-    hospital.matchingParticipation ? "参加" : "不参加",
-    hospital.receptionNumber,
     hospital.hospitalUrl,
     hospital.sourceUrl,
     hospital.reginaviSourceUrl || "",
@@ -417,10 +457,10 @@ function resetFilters() {
   [...elements.emergencyFilter.options].forEach((option) => {
     option.selected = false;
   });
-  elements.participationFilter.value = "";
   elements.quotaMin.value = "";
   elements.quotaMax.value = "";
-  elements.sortOrder.value = "prefecture";
+  elements.sortField.value = "prefecture";
+  elements.sortDirection.value = "asc";
   filterHospitals();
 }
 
@@ -432,10 +472,10 @@ function bindEvents() {
     elements.regionFilter,
     elements.prefectureFilter,
     elements.emergencyFilter,
-    elements.participationFilter,
     elements.quotaMin,
     elements.quotaMax,
-    elements.sortOrder,
+    elements.sortField,
+    elements.sortDirection,
   ].forEach((element) => {
     element.addEventListener("input", filterHospitals);
   });
@@ -468,7 +508,7 @@ async function init() {
     state.hospitals = state.data.hospitals;
     elements.datasetYear.textContent = `${state.data.datasetYear}年度`;
     elements.totalCount.textContent = state.hospitals.length.toLocaleString("ja-JP");
-    elements.noticeText.textContent = `${state.data.notice} データ生成日: ${state.data.generatedAt}`;
+    elements.noticeText.textContent = `${state.data.notice.replace("JRMP参加病院ページ", "JRMP病院一覧ページ")} データ生成日: ${state.data.generatedAt}`;
 
     fillSelect(elements.typeFilter, uniqueValues(state.hospitals, "type"));
     fillMultiSelect(

@@ -15,10 +15,17 @@
   box-sizing: border-box;
 }
 
+html {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
+  min-height: 100vh;
   background: var(--bg);
   color: var(--text);
+  display: flex;
+  flex-direction: column;
   font-family:
     system-ui,
     -apple-system,
@@ -35,7 +42,7 @@ body {
 
 .site-header > div,
 main {
-  width: min(1180px, calc(100% - 32px));
+  width: calc(100% - 32px);
   margin: 0 auto;
 }
 
@@ -63,6 +70,9 @@ h1 {
 }
 
 main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: 24px 0 48px;
 }
 
@@ -260,19 +270,24 @@ button#resetFilters:hover {
 }
 
 .table-section {
+  flex: 1 1 480px;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
   margin-top: 18px;
   overflow: hidden;
 }
 
 .table-wrap {
+  flex: 1;
+  min-height: 0;
   overflow-x: auto;
-  max-height: 68vh;
   overflow-y: auto;
 }
 
 table {
   width: 100%;
-  min-width: 1180px;
+  min-width: 980px;
   border-collapse: collapse;
 }
 
@@ -301,8 +316,7 @@ tbody tr:hover td {
   background: #f8fbff;
 }
 
-.number-cell,
-.status-cell {
+.number-cell {
   white-space: nowrap;
 }
 
@@ -313,23 +327,6 @@ tbody tr:hover td {
 .muted-cell {
   color: #8a94a3;
   white-space: nowrap;
-}
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  border-radius: 999px;
-  padding: 2px 9px;
-  background: #e8f6ee;
-  color: #11633b;
-  font-size: 0.83rem;
-  font-weight: 700;
-}
-
-.status-badge.is-off {
-  background: #fff1f2;
-  color: var(--danger);
 }
 
 .empty-state {
